@@ -27,8 +27,7 @@ public class MovementComponent : MonoBehaviour
     public readonly int movementYHash = Animator.StringToHash("MovementY");
     public readonly int isJumpingHash = Animator.StringToHash("isJumping");
     public readonly int isRunningHash = Animator.StringToHash("isRunning");
-    public readonly int isFiringHash = Animator.StringToHash("isFiring");
-    public readonly int isRealodingHash = Animator.StringToHash("isReloading");
+
 
     private void Awake()
     {
@@ -40,7 +39,7 @@ public class MovementComponent : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
@@ -63,7 +62,7 @@ public class MovementComponent : MonoBehaviour
             angles.x = 70;
         }
 
-       followTarget.transform.localEulerAngles = angles;
+        followTarget.transform.localEulerAngles = angles;
 
         transform.rotation = Quaternion.Euler(0, followTarget.transform.rotation.eulerAngles.y, 0);
 
@@ -113,17 +112,7 @@ public class MovementComponent : MonoBehaviour
         lookInput = value.Get<Vector2>();
     }
 
-    public void OnFire(InputValue value)
-    {
-        playerController.isFiring = value.isPressed;
-        PlayerAnimator.SetBool(isFiringHash, playerController.isFiring);
-    }
 
-    public void OnReload(InputValue value)
-    {
-        playerController.isReloading = value.isPressed;
-        PlayerAnimator.SetBool(isRealodingHash, playerController.isReloading);
-    }
 
     private void OnCollisionEnter(Collision collision)
     {

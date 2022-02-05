@@ -10011,8 +10011,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   weaponToSpawn: {fileID: 460097755758549733, guid: 605c5b713509f914ea5106ee347fd16c, type: 3}
+  playerController: {fileID: 0}
   crosshairImage: {fileID: 0}
   weaponSocketLocation: {fileID: 1935898579}
+  gripIKSocketLocation: {fileID: 0}
 --- !u!4 &954176530553591202
 Transform:
   m_ObjectHideFlags: 0
