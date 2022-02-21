@@ -15,7 +15,7 @@ public class MovementComponent : MonoBehaviour
     PlayerController playerController;
     Rigidbody rigidbody;
     Animator PlayerAnimator;
-    public GameObject followTarget;
+    public GameObject followTransform;
 
     Vector2 inputVector = Vector2.zero;
     Vector3 moveDirection = Vector3.zero;
@@ -27,7 +27,7 @@ public class MovementComponent : MonoBehaviour
     public readonly int movementYHash = Animator.StringToHash("MovementY");
     public readonly int isJumpingHash = Animator.StringToHash("isJumping");
     public readonly int isRunningHash = Animator.StringToHash("isRunning");
-
+    public readonly int verticalAimHash = Animator.StringToHash("VerticalAim");
 
     private void Awake()
     {
@@ -39,36 +39,57 @@ public class MovementComponent : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (!GameManager.instance.cursorActive)
+        {
+            AppEvents.InvokeMouseCursorEnable(false);
+        }
 
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        followTarget.transform.rotation *= Quaternion.AngleAxis(lookInput.x * aimSensitivity, Vector3.up);
-        followTarget.transform.rotation *= Quaternion.AngleAxis(lookInput.y * aimSensitivity, Vector3.left);
+        //camera x-axis rotation
+        followTransform.transform.rotation *= Quaternion.AngleAxis(lookInput.x * aimSensitivity, Vector3.up);
 
-        var angles = followTarget.transform.localEulerAngles;
+       
+        followTransform.transform.rotation *= Quaternion.AngleAxis(lookInput.y * aimSensitivity, Vector3.left);
+
+        var angles = followTransform.transform.localEulerAngles;
         angles.z = 0;
 
-        var angle = followTarget.transform.localEulerAngles.x;
+       
+        var angle = followTransform.transform.localEulerAngles.x;
 
-        if (angle > 180 && angle < 300)
-        {
-            angles.x = 300;
-        }
-        else if (angle < 180 && angle > 70)
-        {
-            angles.x = 70;
-        }
+        float min = -60;
+        float max = 70.0f;
+        float range = max - min;
+        float offsetToZero = 0 - min;
+        float aimAngle = followTransform.transform.localEulerAngles.x;
+        aimAngle = (aimAngle > 180) ? aimAngle - 360 : aimAngle;
+        float val = (aimAngle + offsetToZero) / (range);
+        print(val);
+        PlayerAnimator.SetFloat(verticalAimHash, val);
 
-        followTarget.transform.localEulerAngles = angles;
+      
 
-        transform.rotation = Quaternion.Euler(0, followTarget.transform.rotation.eulerAngles.y, 0);
+            if (angle > 180 && angle < 300)
+            {
+                angles.x = 300;
+            }
+            else if (angle < 180 && angle > 70)
+            {
+                angles.x = 70;
+            }
 
-        followTarget.transform.localEulerAngles = new Vector3(angles.x, 0, 0);
+       
+        followTransform.transform.localEulerAngles = angles;
 
+    
+        //rotate the player to face where we are looking
+        transform.rotation = Quaternion.Euler(0, followTransform.transform.rotation.eulerAngles.y, 0);
+        followTransform.transform.localEulerAngles = new Vector3(angles.x, 0, 0);
 
+        //movement
         if (playerController.isJumping) return;
         if (!(inputVector.magnitude > 0)) moveDirection = Vector3.zero;
 
@@ -78,7 +99,11 @@ public class MovementComponent : MonoBehaviour
         Vector3 movementDirection = moveDirection * (currentSpeed * Time.deltaTime);
 
         transform.position += movementDirection;
+
+
     }
+
+
 
     public void OnMovement(InputValue value)
     {
@@ -95,9 +120,13 @@ public class MovementComponent : MonoBehaviour
 
     public void OnJump(InputValue value)
     {
+        if (playerController.isJumping)
+        {
+            return;
+        }
+        playerController.isJumping = true;
 
 
-        playerController.isJumping = value.isPressed;
         rigidbody.AddForce((transform.up + moveDirection) * jumpForce, ForceMode.Impulse);
         PlayerAnimator.SetBool(isJumpingHash, playerController.isJumping);
     }
@@ -113,12 +142,35 @@ public class MovementComponent : MonoBehaviour
     }
 
 
-
+    bool IsGroundCollision(ContactPoint[] contacts)
+    {
+        for (int i = 0; i < contacts.Length; i++)
+        {
+            if (1 - contacts[i].normal.y < 1f)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     private void OnCollisionEnter(Collision collision)
     {
         if (!collision.gameObject.CompareTag("Ground") && !playerController.isJumping) return;
+      
+        if (IsGroundCollision(collision.contacts))
+        {
+            playerController.isJumping = false;
+            PlayerAnimator.SetBool(isJumpingHash, false);
+        }
+    }
+    private void OnCollisionStay(Collision collision)
+    {
+        if (!collision.gameObject.CompareTag("Ground") && !playerController.isJumping || rigidbody.velocity.y > 0) return;
 
-        playerController.isJumping = false;
-        PlayerAnimator.SetBool(isJumpingHash, false);
+        if (IsGroundCollision(collision.contacts))
+        {
+            playerController.isJumping = false;
+            PlayerAnimator.SetBool(isJumpingHash, false);
+        }
     }
 }
